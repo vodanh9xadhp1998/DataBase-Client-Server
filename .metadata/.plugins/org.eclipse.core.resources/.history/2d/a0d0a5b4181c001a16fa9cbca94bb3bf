@@ -1,0 +1,65 @@
+package Database;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.sql.*;
+import java.util.ArrayList;
+
+public class Server {
+	private static String DB_URL = "jdbc:mysql://localhost:3306/sinhvien";
+	private static String USER_NAME = "root";
+	private static String PASSWORD = "nguyenlinh1998";
+	public final static int SERVER_PORT = 9000;
+
+	public static Connection getConnection(String dbURL, String userName, String password) {
+		Connection cn = null;
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			cn = DriverManager.getConnection(dbURL, userName, password);
+			System.out.println("Connect Database successfully...!");
+		} catch (Exception ex) {
+			System.out.println("Connect Database fail");
+			ex.printStackTrace();
+		}
+		return cn;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void main(String args[]) throws IOException {
+		ServerSocket serverSocket = null;
+		ArrayList<Student> dssv = new ArrayList<Student>();
+		try {
+			System.out.println("Binding to port " + SERVER_PORT + ", please wait  ...");
+			serverSocket = new ServerSocket(SERVER_PORT);
+			System.out.println("Server started: " + serverSocket);
+			System.out.println("Waiting for a client ...");
+			try {
+				Socket socket = serverSocket.accept();
+				System.out.println("Client accepted: " + socket);
+
+				ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+				ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+				dssv = (ArrayList<Student>) ois.readObject();
+				socket.close();
+			} catch (IOException e) {
+				System.err.println(" Connection Error: " + e);
+			}
+			Connection conn = getConnection(DB_URL, USER_NAME, PASSWORD);
+			Statement stmt = conn.createStatement();
+			ResultSet rs = stmt.executeQuery("select * from dssv");
+			while (rs.next()) {
+				System.out.println(rs.getInt(1) + "\t" + rs.getString(2) + "\t" + rs.getInt(3) + "\t" + rs.getFloat(4));
+			}
+			conn.close();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		} finally {
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+        }
+	}
+}

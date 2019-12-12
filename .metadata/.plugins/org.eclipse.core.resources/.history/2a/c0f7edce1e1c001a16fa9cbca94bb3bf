@@ -1,0 +1,95 @@
+package Database;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.sql.*;
+import java.util.ArrayList;
+
+public class Server {
+	private final String ClassName = "com.mysql.jdbc.Driver";
+	private final String Url = "jdbc:mysql://localhost:3306/sinhvien";
+	private final String User = "root";
+	private final String pass = "nguyenlinh1998";
+	private Connection connection;
+	public final static int SERVER_PORT = 9000;
+	
+	private void connect()
+	{
+		try {
+			Class.forName(ClassName);
+			connection = DriverManager.getConnection(Url,User,pass);
+			System.out.println("Connect success..!");
+		}
+		catch(ClassNotFoundException e)
+		{
+			System.out.println("Class Not Found");
+		}
+		catch(SQLException e)
+		{
+			System.out.println("Error Connection");
+		}
+	}
+	@SuppressWarnings("unused")
+	private ResultSet getData()
+	{
+		ResultSet rs = null;
+		String sqlCommand = "select * from dssv";
+		Statement st;
+		try {
+			st = connection.createStatement();
+			rs = st.executeQuery(sqlCommand);
+		}catch(SQLException e)
+		{
+			System.out.println("Error "+e.toString());
+		}
+		return rs;
+	}
+	@SuppressWarnings("unused")
+	private void showData(ResultSet rs)
+	{
+		try {
+			while(rs.next())
+			{
+				System.out.printf(rs.getInt(1)+"\t"+rs.getString(2)+"\t"+rs.getInt(3)+"\t"+rs.getFloat(4)+"\n");
+			}
+		}catch(SQLException e)
+		{
+			System.out.println(e);
+		}
+	}
+	@SuppressWarnings("unchecked")
+	public static void main(String args[]) throws IOException {
+		Server myconnect = new Server();
+		myconnect.connect();
+		System.out.printf("ID\tName\tAge\tMark\n");
+		myconnect.showData(myconnect.getData());
+		ServerSocket serverSocket = null;
+		ArrayList<Student> dssv = new ArrayList<Student>();
+		try {
+			System.out.println("Binding to port " + SERVER_PORT + ", please wait  ...");
+			serverSocket = new ServerSocket(SERVER_PORT);
+			System.out.println("Server started: " + serverSocket);
+			System.out.println("Waiting for a client ...");
+			try {
+				Socket socket = serverSocket.accept();
+				System.out.println("Client accepted: " + socket);
+
+				ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+				ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+				dssv = (ArrayList<Student>) ois.readObject();
+				socket.close();
+			} catch (IOException e) {
+				System.err.println(" Connection Error: " + e);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		} finally {
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+        }
+	}
+}

@@ -1,0 +1,56 @@
+package BaiKT;
+
+import java.io.*;
+import java.lang.reflect.Array;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class Server {
+    public final static  int SERVER_PORT = 9999;
+    public final static byte[] BUFFER = new byte[4096];
+    public  static int SoNT(int n){
+        if(n<2) return 0;
+        if (n==2) return 1;
+        for (int i = 2; i <= Math.sqrt(n); i++)
+            {
+                if (n % i == 0)
+                    return 0;
+            }
+        return 1;
+        }
+    public static void main(String[] args) throws SocketException {
+        DatagramSocket ds = null;
+        List<Integer> dskq = new ArrayList<Integer>();
+        List<Integer> dss = new ArrayList<Integer>();
+        try {
+            System.out.println("Binding to port "+ SERVER_PORT + ",Please wait...");
+            ds = new DatagramSocket(SERVER_PORT);
+            System.out.println("Server start...");
+            System.out.println("Waiting for messages from Client...");
+            while (true) {
+                DatagramPacket dp = new DatagramPacket(BUFFER,BUFFER.length);
+                ds.receive(dp);
+                ByteArrayInputStream bais = new ByteArrayInputStream(dp.getData());
+                ObjectInputStream ois = new ObjectInputStream(bais);
+                dss= (List<Integer>) ois.readObject();
+                for(int i : dss)
+                    if(SoNT(i)==1)
+                        dskq.add(i);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(dskq);
+                byte[] data = baos.toByteArray();
+                dp = new DatagramPacket(data,data.length,dp.getAddress(),dp.getPort());
+                ds.send(dp);
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        finally {
+            if (ds != null)
+                ds.close();
+        }
+    }
+}
